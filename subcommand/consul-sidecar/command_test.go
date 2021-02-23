@@ -31,13 +31,13 @@ func TestRun_Defaults(t *testing.T) {
 }
 
 func TestRun_ExitsCleanlyonSignals(t *testing.T) {
-	t.Run("SIGINT", testRunSignalHandling(syscall.SIGINT))
-	t.Run("SIGTERM", testRunSignalHandling(syscall.SIGTERM))
-	t.Run("SIGINT-metrics", testRunSignalHandlingMetricsServerShutdown(syscall.SIGINT))
-	t.Run("SIGTERM-metrics", testRunSignalHandlingMetricsServerShutdown(syscall.SIGTERM))
+	t.Run("SIGINT-registration", testRunSignalHandlingRegistration(syscall.SIGINT))
+	t.Run("SIGTERM-registration", testRunSignalHandlingRegistration(syscall.SIGTERM))
+	t.Run("SIGINT-all", testRunSignalHandlingAllProcessesEnabled(syscall.SIGINT))
+	t.Run("SIGTERM-all", testRunSignalHandlingAllProcessesEnabled(syscall.SIGTERM))
 }
 
-func testRunSignalHandling(sig os.Signal) func(*testing.T) {
+func testRunSignalHandlingRegistration(sig os.Signal) func(*testing.T) {
 	return func(t *testing.T) {
 		tmpDir, configFile := createServicesTmpFile(t, servicesRegistration)
 		defer os.RemoveAll(tmpDir)
@@ -79,7 +79,7 @@ func testRunSignalHandling(sig os.Signal) func(*testing.T) {
 	}
 }
 
-func testRunSignalHandlingMetricsServerShutdown(sig os.Signal) func(*testing.T) {
+func testRunSignalHandlingAllProcessesEnabled(sig os.Signal) func(*testing.T) {
 	return func(t *testing.T) {
 		tmpDir, configFile := createServicesTmpFile(t, servicesRegistration)
 		defer os.RemoveAll(tmpDir)
