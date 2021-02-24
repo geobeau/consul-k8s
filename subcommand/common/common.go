@@ -4,9 +4,12 @@ package common
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 
+	"github.com/hashicorp/consul/api"
 	"github.com/hashicorp/go-hclog"
 )
 
@@ -43,6 +46,35 @@ func ValidatePort(flagName, flagValue string) error {
 	// This checks if the port is in the valid port range.
 	if port < 1024 || port > 65535 {
 		return errors.New(fmt.Sprintf("%s value of %d is not in the port range 1024-65535.", flagName, port))
+	}
+	return nil
+}
+
+// ConsulAclLogin issues an ACL().Login to Consul and writes out the token to tokenSinkFile.
+func ConsulAclLogin(client *api.Client, bearerTokenFile, authMethodName, bearerToken, tokenSinkFile string, meta map[string]string) error {
+	data, err := ioutil.ReadFile(bearerTokenFile)
+	if err != nil {
+		return fmt.Errorf("unable to read bearerTokenFile: %v, err: %v", bearerTokenFile, err)
+	}
+	bearerToken = strings.TrimSpace(string(data))
+	if bearerToken == "" {
+		return fmt.Errorf("no bearer token found in %s", bearerTokenFile)
+	}
+	// Do the login.
+	req := &api.ACLLoginParams{
+		AuthMethod:  authMethodName,
+		BearerToken: bearerToken,
+		Meta:        meta,
+	}
+	tok, _, err := client.ACL().Login(req, nil)
+	if err != nil {
+		return fmt.Errorf("error logging in: %s", err)
+	}
+
+	// Write the token out to file.
+	payload := []byte(tok.SecretID)
+	if err := ioutil.WriteFile(tokenSinkFile, payload, 444); err != nil {
+		return fmt.Errorf("error writing token to file sink: %v", err)
 	}
 	return nil
 }
